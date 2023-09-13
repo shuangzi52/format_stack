@@ -12,6 +12,13 @@ Frame::Frame(long skip) {
   if (skip >= 0) {
     skip_ = skip;
   }
+
+  marks_[0] = '|';
+  marks_[1] = '+';
+  marks_[2] = '-';
+  marks_[3] = 'x';
+  marks_[4] = '=';
+  markCount_ = sizeof(marks_) / sizeof(char);
 }
 
 void Frame::initConfigs() {
@@ -151,25 +158,136 @@ void Frame::reformat() {
     return ;
   }
 
-  int level = 1;
-  string prefix;
   string line;
-  string::size_type startPos, levelIdx, markIdx;
+  vector<string> stack;
+  string::size_type startPos;
   while (getline(ifs, line)) {
     line = trimSpace(line);
-    startPos = line.find_first_of('>');
-
-    prefix = "";
-    for (levelIdx = 0; levelIdx < level; levelIdx++) {
-      markIdx = levelIdx % markCount_;
-      cout << marks_[markIdx] << " ";
+    startPos = line.find('>') + 2;
+    if (startPos == string::npos) {
+      stack.push_back(line);
+    } else {
+      stack.push_back(line.substr(startPos));
     }
-    cout << line.substr(startPos) << endl;
-
-    level++;
   }
 
   ifs.close();
+
+  if (stack.empty()) {
+    cout << "file[" << reformatFile_ << "] is empty" << endl;
+  } else {
+    show(stack);
+  }
+}
+
+void Frame::simplify() {
+  char *dir = dirname((char *)__FILE__);
+
+  string path(dir);
+  path += '/';
+  path += simplifyFile_;
+
+  ifstream ifs(path, ios::in);
+  if (!ifs.good()) {
+    cerr << "file[" << path << "] is not exists" << endl;
+    return ;
+  }
+
+  string line;
+  vector<string> stack;
+  while (getline(ifs, line)) {
+    line = trimSpace(line);
+    stack.push_back(line);
+  }
+  if ((stack.end() - 1)->find("this is the ending") == string::npos) {
+    stack.emplace_back(string("| > *** this is the ending ***"));
+  }
+
+  ifs.close();
+
+  vector<string>::size_type angleBracketPos;
+  vector<string>::const_iterator iter;
+  vector<string>::size_type lineIdx = 0;
+  vector<string>::size_type len = stack.size();
+  for (iter = stack.cbegin(); iter != stack.cend(); iter++, lineIdx++) {
+    bool isMatched = false;
+
+    line = *iter;
+    angleBracketPos = line.find('>');
+    if (angleBracketPos == string::npos) {
+      continue;
+    }
+
+    string leftLine;
+    vector<string>::size_type idxLeft, idxReplace, endReplaceIdx = 0;
+    for (idxLeft = lineIdx + 1; idxLeft < len; idxLeft++) {
+      bool isMark = false;
+      char letter = stack[idxLeft][angleBracketPos];
+      leftLine = stack[idxLeft];
+      for (char mark : marks_) {
+        if (leftLine[angleBracketPos - 1] == ' ' &&
+            letter == mark &&
+            leftLine[angleBracketPos + 1] == ' ') {
+          isMark = true;
+          break;
+        }
+      }
+
+      if (isMark) {
+        continue;
+      } else if (letter == '>') {
+        isMatched = true;
+        break;
+      } else {
+        endReplaceIdx = idxLeft;
+        break;
+      }
+    }
+
+    if (isMatched) {
+      continue;
+    }
+
+    if (endReplaceIdx == 0) {
+      endReplaceIdx = len - 1;
+    }
+
+    for (idxReplace = lineIdx + 1; idxReplace < endReplaceIdx; idxReplace++) {
+      stack[idxReplace].replace(angleBracketPos, 1, " ");
+    }
+  }
+
+  vector<string>::size_type idxReplace;
+  for (lineIdx = 0; lineIdx < len; lineIdx++) {
+    idxReplace = 0;
+    line = stack[lineIdx];
+
+    string::const_iterator charIter;
+    for (charIter = line.cbegin(); charIter != line.cend(); charIter++, idxReplace++) {
+      if (*(charIter - 1) == ' ' && *charIter == '>' && *(charIter + 1) == ' ') {
+        break;
+      }
+
+      for (char mark : marks_) {
+        if (*charIter == mark && *charIter != '|') {
+          line.replace(idxReplace, 1, "|");
+        }
+      }
+    }
+    if (lineIdx < len - 1) {
+      cout << line << endl;
+    } else {
+      idxReplace = 1;
+      for (charIter = line.cbegin() + idxReplace; charIter != line.cend(); charIter++, idxReplace++) {
+        if (*charIter == '>') {
+          break;
+        } else {
+          line.replace(idxReplace, 1, " ");
+        }
+      }
+      cout << line << endl;
+    }
+  }
 }
 
 string Frame::trimSpace(string content) {
@@ -349,7 +467,7 @@ void Frame::show(vector<string> &frames) {
     return ;
   }
 
-  int level = 1;
+  int level = 0;
   int levelIdx, markIdx;
   vector<string>::const_iterator it;
   for (it = frames.cbegin(); it != frames.cend(); it++) {

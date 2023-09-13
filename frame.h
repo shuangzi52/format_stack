@@ -13,13 +13,15 @@ class Frame {
 public:
     explicit Frame(long skip);
     void format();
-    static void reformat();
+    void reformat();
+    void simplify();
 
 private:
-    constexpr static char marks_[]  = {'|', '+', '-', 'x', '='};
-    constexpr static int markCount_ = sizeof(marks_) / sizeof(char);
+    char marks_[5];
+    int markCount_;
     constexpr static char *formatFile_ = (char *)"format.txt";
     constexpr static char *reformatFile_ = (char *)"reformat.txt";
+    constexpr static char *simplifyFile_ = (char *)"simplify.txt";
     constexpr static char *configFile_ = (char *)"config.ini";
 
 
@@ -29,8 +31,8 @@ private:
 
 private:
     vector<string> readFromFile();
-    static void show(vector<string> &frames);
-    static string trimSpace(string content);
+    void show(vector<string> &frames);
+    string trimSpace(string content);
     string formatPath(string content);
     string formatInvoke(string content);
     void initConfigs();

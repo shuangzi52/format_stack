@@ -15,7 +15,9 @@ int main(int argc, char *argv[]) {
     switch(opt) {
       case 'f':
         if (optarg) {
-          if (strcmp(optarg, "format") == 0 || strcmp(optarg, "reformat") == 0) {
+          if (strcmp(optarg, "format") == 0 ||
+              strcmp(optarg, "reformat") == 0 ||
+              strcmp(optarg, "simplify") == 0) {
             func = optarg;
           } else {
             usage(argv);
@@ -35,7 +37,9 @@ int main(int argc, char *argv[]) {
 
   Frame frame(skip);
   if (func == "reformat") {
-    Frame::reformat();
+    frame.reformat();
+  } else if (func == "simplify") {
+    frame.simplify();
   } else {
     frame.format();
   }
