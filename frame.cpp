@@ -160,23 +160,90 @@ void Frame::reformat() {
 
   string line;
   vector<string> stack;
-  string::size_type startPos;
+  string::size_type angleBracketPos;
+  string::size_type lastPos;
+  string::size_type prefixTrimLetter = 0;
+  bool isNeedReformat = true;
+  bool isInMultiComment = false;
   while (getline(ifs, line)) {
     line = trimSpace(line);
-    startPos = line.find('>') + 2;
-    if (startPos == string::npos) {
+
+    // 空行
+    if (line.empty()) {
       stack.push_back(line);
-    } else {
-      stack.push_back(line.substr(startPos));
+      continue;
     }
+
+    // 多行注释开始
+    if (line.substr(0, 2) == "/*") {
+      isInMultiComment = true;
+      stack.push_back(line);
+      continue;
+    }
+
+    // 多行注释结束
+    lastPos = line.length() - 1;
+    if (line[lastPos - 1] == '*' && line[lastPos] == '/') {
+      isInMultiComment = false;
+      stack.push_back(line);
+      continue;
+    }
+
+    // 多行注释
+    if (isInMultiComment) {
+      stack.push_back(line);
+      continue;
+    }
+
+    if (prefixTrimLetter == 0) {
+      if (line.substr(0, 2) == "> ") {
+        // 如果堆栈的第 1 行以尖括号加空格（"> "）开头，说明不需要重新格式化
+        isNeedReformat = false;
+        break;
+      } else {
+        angleBracketPos = line.find(" > ");
+        if (angleBracketPos == string::npos) {
+          break;
+        } else {
+          prefixTrimLetter = angleBracketPos + 1;
+        }
+      }
+    }
+
+    if (!isNeedReformat) {
+      return ;
+    }
+
+    // 重新格式化
+    int idx = 0, markIdx = 0;
+    string::const_iterator iter;
+    line.erase(0, prefixTrimLetter);
+    // line = line.substr(prefixTrimLetter);
+    for (iter = line.cbegin(); iter != line.cend(); iter++, idx++) {
+      if (*iter == '>' && *(iter + 1) == ' ') {
+        break;
+      }
+      if (*iter == ' ') {
+        continue;
+      }
+
+
+      markIdx = idx % markCount_;
+      line[idx] = marks_[markIdx];
+    }
+    stack.push_back(line);
   }
 
   ifs.close();
 
   if (stack.empty()) {
     cout << "file[" << reformatFile_ << "] is empty" << endl;
-  } else {
-    show(stack);
+    return;
+  }
+
+  vector<string>::const_iterator constIter;
+  for (constIter = stack.cbegin(); constIter != stack.cend(); constIter++) {
+    cout << *constIter << endl;
   }
 }
 
@@ -257,7 +324,7 @@ void Frame::simplify() {
     }
   }
 
-  vector<string>::size_type idxReplace;
+  int idxReplace;
   for (lineIdx = 0; lineIdx < len; lineIdx++) {
     idxReplace = 0;
     line = stack[lineIdx];
