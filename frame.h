@@ -17,7 +17,7 @@ public:
     void simplify();
 
 private:
-    char marks_[5];
+    char marks_[5]{0};
     int markCount_;
     constexpr static char *formatFile_ = (char *)"format.txt";
     constexpr static char *reformatFile_ = (char *)"reformat.txt";

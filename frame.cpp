@@ -199,11 +199,10 @@ void Frame::reformat() {
       if (line.substr(0, 2) == "> ") {
         // 如果堆栈的第 1 行以尖括号加空格（"> "）开头，说明不需要重新格式化
         isNeedReformat = false;
-        break;
       } else {
         angleBracketPos = line.find(" > ");
         if (angleBracketPos == string::npos) {
-          break;
+          isNeedReformat = false;
         } else {
           prefixTrimLetter = angleBracketPos + 1;
         }
@@ -215,7 +214,7 @@ void Frame::reformat() {
     }
 
     // 重新格式化
-    int idx = 0, markIdx = 0;
+    int idx = 0, markIdx;
     string::const_iterator iter;
     line.erase(0, prefixTrimLetter);
     // line = line.substr(prefixTrimLetter);
