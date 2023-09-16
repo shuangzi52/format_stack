@@ -196,15 +196,15 @@ void Frame::reformat() {
     }
 
     if (prefixTrimLetter == 0) {
-      if (line.substr(0, 2) == "> ") {
-        // 如果堆栈的第 1 行以尖括号加空格（"> "）开头，说明不需要重新格式化
+      if (line.substr(0, 4) == "| > ") {
+        // 如果堆栈的第 1 行以竖线 + 空格 + 尖括号 + 空格（"| > "）开头，说明不需要重新格式化
         isNeedReformat = false;
       } else {
         angleBracketPos = line.find(" > ");
         if (angleBracketPos == string::npos) {
           isNeedReformat = false;
         } else {
-          prefixTrimLetter = angleBracketPos + 1;
+          prefixTrimLetter = angleBracketPos - 1;
         }
       }
     }
@@ -215,20 +215,21 @@ void Frame::reformat() {
 
     // 重新格式化
     int idx = 0, markIdx;
-    string::const_iterator iter;
+    string::iterator iter;
     line.erase(0, prefixTrimLetter);
-    // line = line.substr(prefixTrimLetter);
-    for (iter = line.cbegin(); iter != line.cend(); iter++, idx++) {
-      if (*iter == '>' && *(iter + 1) == ' ') {
+    for (iter = line.begin(); iter != line.end(); iter++) {
+      if (*(iter - 1) == ' ' && *iter == '>' && *(iter + 1) == ' ') {
         break;
       }
+
       if (*iter == ' ') {
         continue;
       }
 
 
       markIdx = idx % markCount_;
-      line[idx] = marks_[markIdx];
+      *iter = marks_[markIdx];
+      idx++;
     }
     stack.push_back(line);
   }
@@ -265,9 +266,9 @@ void Frame::simplify() {
     line = trimSpace(line);
     stack.push_back(line);
   }
-  if ((stack.end() - 1)->find("this is the ending") == string::npos) {
+  /* if ((stack.end() - 1)->find("this is the ending") == string::npos) {
     stack.emplace_back(string("| > *** this is the ending ***"));
-  }
+  } */
 
   ifs.close();
 
@@ -384,10 +385,10 @@ string Frame::trimSpace(string content) {
 }
 
 /**
- * 去掉堆栈路径中的括号
+ * 去掉堆栈对应文件路径中的括号
  * 例如：
  *   parse_sql(THD*, Parser_state*, Object_creation_ctx*) (/opt/data/workspace_c/mysql8/sql/sql_parse.cc:7085)
- * 去掉路径两边的括号之后得到：
+ *   去掉文件路径两边的括号之后得到
  *   parse_sql(THD*, Parser_state*, Object_creation_ctx*) /opt/data/workspace_c/mysql8/sql/sql_parse.cc:7085
  * @param content
  * @return
@@ -533,7 +534,7 @@ void Frame::show(vector<string> &frames) {
     return ;
   }
 
-  int level = 0;
+  int level = 1;
   int levelIdx, markIdx;
   vector<string>::const_iterator it;
   for (it = frames.cbegin(); it != frames.cend(); it++) {
