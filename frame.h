@@ -11,7 +11,7 @@ using namespace std;
 
 class Frame {
 public:
-    explicit Frame(long skip);
+    explicit Frame(long skip, bool isTrimTplParams);
     void format();
     void reformat();
     void simplify();
@@ -26,6 +26,7 @@ private:
 
 
     long skip_;
+    bool isTrimTplParams_;
     vector<string> projectRoots_;
     vector<string> namespaces_;
 

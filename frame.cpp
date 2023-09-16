@@ -8,10 +8,12 @@
 #include <cctype>
 #include "frame.h"
 
-Frame::Frame(long skip) {
+Frame::Frame(long skip, bool isTrimTplParams) {
   if (skip >= 0) {
     skip_ = skip;
   }
+
+  isTrimTplParams_ = isTrimTplParams;
 
   marks_[0] = '|';
   marks_[1] = '+';
@@ -474,8 +476,12 @@ string Frame::formatInvoke(string content) {
           angleEnd = i;
           isInAngleBracket = false;
 
-          newContent.append(content.substr(0, angleStart + 1));
-          newContent.append("...>");
+          if (isTrimTplParams_) {
+            newContent.append(content.substr(0, angleStart + 1));
+            newContent.append("...>");
+          } else {
+            newContent.append(content.substr(0, angleEnd + 1));
+          }
         }
       }
 
