@@ -6,6 +6,7 @@
 #include <libgen.h>
 #include <fstream>
 #include <cctype>
+#include <sstream>
 #include "frame.h"
 
 Frame::Frame(long skip, bool isTrimTplParams) {
@@ -439,6 +440,34 @@ string Frame::formatPath(string content) {
 string Frame::formatInvoke(string content) {
   if (content.empty()) {
     return content;
+  }
+
+  // 解决函数名不带括号导致报错的问题
+  // 例如：main sql/main.cc:25
+  if (content.find('(') == string::npos) {
+    vector<string> tmpCntArr;
+    stringstream tmpStr(content);
+    string tmpPart;
+    // 按空格把 content 字符串拆分为数字
+    while (getline(tmpStr, tmpPart, ' ')) {
+      tmpCntArr.push_back(tmpPart);
+    }
+
+    int partCount = tmpCntArr.size();
+    if (partCount == 1) { // 只有方法名，没有路径，把方法名加上括号
+      tmpCntArr[0] += "()";
+    } else if (partCount >= 2) { // 有方法名和路径，方法名在倒数第 2 个，把方法名加上括号
+      tmpCntArr[partCount - 2] += "()";
+    }
+
+    content = "";
+    for (int i = 0; i < partCount; ++i) {
+      if (!content.empty()) {
+        content.append(" ");
+      }
+
+      content.append(tmpCntArr[i]);
+    }
   }
 
   char letter;
